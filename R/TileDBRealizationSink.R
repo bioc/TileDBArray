@@ -210,7 +210,6 @@ setValidity2("TileDBRealizationSink", function(object) {
 #' @importFrom SparseArray nzwhich nzvals
 #' @importFrom DelayedArray start width
 setMethod("write_block", "TileDBRealizationSink", function(sink, viewport, block) {
-    starts <- start(viewport) - 1L
     obj <- tiledb_array(sink@path, attrs=sink@attr, query_type="WRITE")
     on.exit(tiledb_array_close(obj))
 
@@ -220,8 +219,9 @@ setMethod("write_block", "TileDBRealizationSink", function(sink, viewport, block
 
         ndim <- ncol(idx)
         store <- vector("list", ndim + 1L)
+        starts <- start(viewport)
         for (i in seq_len(ndim)) {
-            store[[i]] <- idx[,i] + starts[i] + sink@offset[i] - 1L
+            store[[i]] <- idx[,i] + (starts[i] - 1L) + (sink@offset[i] - 1L)
         }
         store[[ndim + 1]] <- vals
 
@@ -229,15 +229,17 @@ setMethod("write_block", "TileDBRealizationSink", function(sink, viewport, block
         obj[] <- data.frame(store)
 
     } else {
-        args <- lapply(width(viewport), seq_len)
-        for (i in seq_along(args)) {
-            args[[i]] <- args[[i]] + starts[i] + sink@offset[i] - 1L
-        }
+        starts <- start(viewport)
+        widths <- width(viewport)
+        ndim <- length(starts)
 
-        # Need to coerce the block, because it could be a SparseArray
-        # derivative.
-        args <- c(list(sink=obj), args, list(value=as.array(block)))
-        do.call("[<-", args)
+        ranges <- vector("list", ndim)
+        for (i in seq_len(ndim)) {
+            actual.start <- starts[i] + (sink@offset[i] - 1L)
+            ranges[[i]] <- cbind(actual.start, actual.start + widths[i] - 1L)
+        }
+        selected_ranges(obj) <- ranges
+        obj[] <- as.array(block) # Need to coerce the block, because it could be a SparseArray derivative.
     }
 
     sink

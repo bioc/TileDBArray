@@ -54,6 +54,20 @@ test_that("can shunt between sparse and non-sparse, regardless of the format", {
     }
 })
 
+test_that("works with high-dimensional arrays", {
+    path <- tempfile()
+    arr <- array(runif(1000), dim=c(10, 5, 20))
+    out <- writeTileDBArray(arr, path=path)
+    expect_identical(unname(as.array(out)), arr)
+
+    path <- tempfile()
+    arr[] <- 0
+    arr[sample(length(arr), 100)] <- rpois(100, lambda=10)
+    arr <- as(arr, "SVT_SparseArray")
+    out <- writeTileDBArray(arr, path=path, sparse=TRUE)
+    expect_identical(as(out, "SVT_SparseArray"), arr)
+})
+
 test_that("responds to the path", {
     path <- tempfile()
     expect_false(file.exists(path))

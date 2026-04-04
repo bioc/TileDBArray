@@ -2,6 +2,10 @@
 \title{TileDBArray News}
 \encoding{UTF-8}
 
+\section{Version 1.22.0}{\itemize{
+\item Workaround for \code{TileDBRealizationSink} to properly write higher-dimensional dense arrays.
+}}
+
 \section{Version 1.16.0}{\itemize{
 \item Minor fix for \code{as.data.frame=} deprecation in \code{tiledb_array()}.
 
