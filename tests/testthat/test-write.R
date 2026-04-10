@@ -11,19 +11,25 @@ SL <- SD > 0
 ref <- list(DI, DD, DL, SD, SL)
 
 test_that("writing works as expected", {
-    for (x in seq_along(ref)) {
-        r <- ref[[x]]
-        t <- as(r, "TileDBArray")
+    old <- getAutoBlockSize()
+    on.exit(setAutoBlockSize(old))
 
-        expect_equivalent(as.matrix(r), as.matrix(t))
-        expect_identical(type(r), type(t))
+    for (bsize in c(500, 1000, 1e6)) {
+        setAutoBlockSize(bsize * 8)
 
-        # No dimnames yet.
-        expect_identical(rownames(r), rownames(t))
-        expect_identical(colnames(r), colnames(t))
+        for (x in seq_along(ref)) {
+            r <- ref[[x]]
+            t <- as(r, "TileDBArray")
+            expect_equivalent(as.matrix(r), as.matrix(t))
+            expect_identical(type(r), type(t))
 
-        # Automatically sparse.
-        expect_identical(is_sparse(r), is_sparse(t))
+            # No dimnames yet.
+            expect_identical(rownames(r), rownames(t))
+            expect_identical(colnames(r), colnames(t))
+
+            # Automatically sparse.
+            expect_identical(is_sparse(r), is_sparse(t))
+        }
     }
 })
 

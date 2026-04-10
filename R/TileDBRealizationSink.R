@@ -234,14 +234,29 @@ setMethod("write_block", "TileDBRealizationSink", function(sink, viewport, block
         starts <- start(viewport)
         widths <- width(viewport)
         ndim <- length(starts)
+        block <- as.array(block) # Need to coerce the block, because it could be a SparseArray derivative.
 
-        ranges <- vector("list", ndim)
-        for (i in seq_len(ndim)) {
-            actual.start <- starts[i] + (sink@offset[i] - 1L)
-            ranges[[i]] <- cbind(actual.start, actual.start + widths[i] - 1L)
+        # The tiledb R interface is broken so we need to do some workarounds depending on the dimensionality.
+        # For ndim > 2, [<- just doesn't work with arrays, so we try selected_ranges().
+        if (ndim == 2L) {
+            ranges <- vector("list", ndim)
+            for (i in seq_len(ndim)) {
+                ranges[[i]] <- seq_len(widths[i]) + (starts[i] - 1L) + (sink@offset[i] - 1L)
+            }
+            do.call(`[<-`, c(list(obj), ranges, list(value = as.array(block))))
+        } else {
+            ranges <- vector("list", ndim)
+            for (i in seq_len(ndim)) {
+                actual.start <- starts[i] + (sink@offset[i] - 1L)
+                ranges[[i]] <- cbind(actual.start, actual.start + widths[i] - 1L)
+            }
+
+            # I don't think does anything at all for [<-, so all high-dimensional writes should be all-of-array writes right now.
+            # We add this in the hope that tiledb-R will finally fix its nonsense and give a sensible high-dimensional write.
+            selected_ranges(obj) <- ranges 
+
+            obj[] <- block
         }
-        selected_ranges(obj) <- ranges
-        obj[] <- as.array(block) # Need to coerce the block, because it could be a SparseArray derivative.
     }
 
     sink
