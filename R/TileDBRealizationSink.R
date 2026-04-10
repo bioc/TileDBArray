@@ -217,16 +217,18 @@ setMethod("write_block", "TileDBRealizationSink", function(sink, viewport, block
         idx <- nzwhich(block, arr.ind=TRUE)
         vals <- nzvals(block)
 
-        ndim <- ncol(idx)
-        store <- vector("list", ndim + 1L)
-        starts <- start(viewport)
-        for (i in seq_len(ndim)) {
-            store[[i]] <- idx[,i] + (starts[i] - 1L) + (sink@offset[i] - 1L)
-        }
-        store[[ndim + 1]] <- vals
+        if (length(vals) > 0) { # no-op if no values are to be written, as this is bugged in tiledb. 
+            ndim <- ncol(idx)
+            store <- vector("list", ndim + 1L)
+            starts <- start(viewport)
+            for (i in seq_len(ndim)) {
+                store[[i]] <- idx[,i] + (starts[i] - 1L) + (sink@offset[i] - 1L)
+            }
+            store[[ndim + 1]] <- vals
 
-        names(store) <- c(sprintf("d%i", seq_len(ndim)), sink@attr)
-        obj[] <- data.frame(store)
+            names(store) <- c(sprintf("d%i", seq_len(ndim)), sink@attr)
+            obj[] <- data.frame(store)
+        }
 
     } else {
         starts <- start(viewport)

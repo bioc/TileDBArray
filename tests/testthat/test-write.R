@@ -100,6 +100,13 @@ test_that("stores non-unity offsets correctly", {
     expect_identical(c(-5L, 10L), vapply(doms, function(x) x[1L], 0L))
 })
 
+test_that("no-ops for empty objects correctly", {
+    library(TileDBArray)
+    empty <- matrix(0L, nrow=60, ncol=20)
+    converted <- writeTileDBArray(empty, sparse=TRUE)
+    expect_identical(unname(as.matrix(converted)), empty)
+})
+
 test_that("other global variables behave as expected", {
     expect_identical(getTileDBExtent(), 100L)
     setTileDBExtent(50L)
